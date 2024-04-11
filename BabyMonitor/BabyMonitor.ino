@@ -24,9 +24,6 @@ void setup() {
   Serial.begin(9600);
   pinMode(SOUND_PIN, INPUT);
 
-
-  
-  /*
   Serial.println(F("BME280 test"));
 
   bool status;
@@ -43,13 +40,13 @@ void setup() {
   delayTime = 1000;
 
   Serial.println();
-  */
+  
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  //printValues();
+  printValues();
   measureSound();
   delay(delayTime);
 
@@ -68,7 +65,7 @@ void measureSound() {
     {
       Serial.println("The sound has dissapiered!");
     }
-
+    Serial.print("----------------------");
     lastState = currentState;
 
 }
