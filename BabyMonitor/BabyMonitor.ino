@@ -3,16 +3,20 @@
 #include <Adafruit_BME280.h>
 
 
-#define SOUND_PIN 18
+//setup sound sensor.
+const int sensorMinValue = 0;
+const int sensorMaxValue = 1680;
+const int dbMinValue = 30;
+const int dbMaxValue = 130;
+
+/*
 int lastState = HIGH;
 int currentState;
+*/
 
-
-
+//Setup bme280 sensor.
+//Usign I2C connection
 Adafruit_BME280 bme;
-
-//Adafruit_BME280 bme(BME_CS); // hardware SPI
-//Adafruit_BME280 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK); // software SPI
 
 unsigned long delayTime;
 
@@ -22,14 +26,13 @@ void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(9600);
-  pinMode(SOUND_PIN, INPUT);
+  setupSoundSensor();
 
+ 
   Serial.println(F("BME280 test"));
-
   bool status;
 
   //default settings
-
   status = bme.begin(0x76);
   if(!status) {
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
@@ -45,33 +48,76 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
   printValues();
   measureSound();
   delay(delayTime);
 
 }
 
+void setupSoundSensor(){
+  pinMode(A0, INPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);                                           
+  pinMode(5, OUTPUT);
+                    
+  digitalWrite(3, LOW);
+  digitalWrite(4, LOW);
+  digitalWrite(5, LOW);
+}
 
 void measureSound() {
 
-    currentState = digitalRead(SOUND_PIN);
+  unsigned int sample;
+  unsigned long startMillis = millis();
+  unsigned int signalMax = 0;
+  unsigned int signalMin = 1024;
 
-    if(lastState == HIGH && currentState == LOW)
-    {
-      Serial.println("The sound has been detected");
+  // Collect data for 50 mS
+  while (millis() - startMillis < 50) {
+    sample = analogRead(A0); // Get reading from sound sensor
+    if (sample < 1024) { // Discard spurious readings
+      if (sample > signalMax) {
+        signalMax = sample; // Save max level
+      } else if (sample < signalMin) {
+        signalMin = sample; // Save min level
+      }
     }
-    else if (lastState == LOW && currentState == HIGH)
-    {
-      Serial.println("The sound has dissapiered!");
-    }
-    Serial.print("----------------------");
-    lastState = currentState;
+  }
+
+  // Calculate peak-to-peak amplitude
+  float peakToPeak = signalMax - signalMin;
+
+  // Map peak-to-peak amplitude to dB using calibration data
+  int db = map(peakToPeak, sensorMinValue, sensorMaxValue, dbMinValue, dbMaxValue);
+
+  Serial.print("Loudness: ");
+  Serial.print(db);
+  Serial.println(" dB");
+
+  // Output level indication based on sound level
+  if (db <= 60) {
+    Serial.println("Level: Quiet");
+    digitalWrite(3, HIGH);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+  } else if (db > 60 && db < 85) {
+    Serial.println("Level: Moderate");
+    digitalWrite(3, LOW);
+    digitalWrite(4, HIGH);
+    digitalWrite(5, LOW);
+  } else if (db >= 85) {
+    Serial.println("Level: High");
+    digitalWrite(3, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, HIGH);
+  }
+
+  delay(200);
 
 }
 
 void printValues() {
-  Serial.print("Temperature = ");
+  Serial.println("Temperature = ");
   Serial.print(bme.readTemperature());
   Serial.println(" *C");
 
