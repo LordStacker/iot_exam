@@ -1,6 +1,20 @@
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+
+//setup network and mqtt
+const char* ssid = "AtanasiPhone";
+const char* password =  "otednodoosem";
+const char* mqttServer = "mqtt.flespi.io";
+const int mqttPort = 1883;
+const char* mqttUser = "716DngMN9TFtlwwDS1gKQZKaDtGz9reFSP8gms9uJ9FYRh0uzulEcVdUKIwQbG2R";
+const char* mqttPassword = "*";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 
 //setup sound sensor.
@@ -26,6 +40,8 @@ void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(9600);
+  
+  setupWiFiConnection();
   setupSoundSensor();
 
  
@@ -48,10 +64,45 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  client.loop();
   printValues();
   measureSound();
   delay(delayTime);
 
+}
+
+void setupWiFiConnection()
+{
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.println("Connected to the WiFi network");
+  }
+
+  Serial.println("Connected to the WiFi network");
+ 
+  client.setServer(mqttServer, mqttPort);
+
+  while (!client.connected()) {
+    Serial.println("Connecting to MQTT...");
+ 
+    if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
+ 
+      Serial.println("connected");
+ 
+    } else {
+ 
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(2000);
+ 
+    }
+  }
+  
+  client.publish("getTemperatureAndHumidity/", "Hello World!");
 }
 
 void setupSoundSensor(){
