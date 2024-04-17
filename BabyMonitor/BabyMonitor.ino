@@ -4,14 +4,17 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <time.h>
+#include "Secrets.h" 
 
-// Setup network and MQTT
-const char* ssid = "IphoneNico";
-const char* password =  "nico1234";
+
+const char* ssid = SSID; 
+const char* password = PASSWORD; 
 const char* mqttServer = "mqtt.flespi.io";
 const int mqttPort = 1883;
-const char* mqttUser = "CtheHXh2THq0Pf3JhObAMNlLn5bkx4klSAGiWdJY0R53tzL5vM6yZh2euJDgC01e";
+const char* mqttUser = MQTT_USER; 
 const char* mqttPassword = "*";
+
+
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -49,7 +52,7 @@ void setup() {
   Serial.println("-- Default Test --");
   delayTime = 1000;
 
-  configTime(0, 0, "pool.ntp.org"); // Configure the NTP client
+  configTime(0, 0, "pool.ntp.org"); 
 
   Serial.println();
 }
@@ -66,7 +69,7 @@ void setupWiFiConnection() {
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.println("Connected to the WiFi network");
+    Serial.println("Connecting to the WiFi network");
   }
 
   Serial.println("Connected to the WiFi network");
@@ -161,11 +164,11 @@ void printValues() {
   struct tm* timeinfo;
   timeinfo = localtime(&now);
   
-  // Format: DD/MM/YYYY and HOUR:MINUTE
+ 
   char formattedDateTime[20];
   snprintf(formattedDateTime, 20, "%d/%d/%d and %d:%s%d", timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900, timeinfo->tm_hour, (timeinfo->tm_min < 10 ? "0" : ""), timeinfo->tm_min);
   String message = "{\"sensor_id\": \"Pending\", \"device_id\": \"Pending\", \"sound_level\": " + String(db) + ", \"temperature\": " + String(temperature) + ", \"humidity\": " + String(humidity) + ", \"date\": \"" + String(formattedDateTime) + "\"}";
-  client.publish("getTemperatureAndHumidity/", message.c_str()); // Publish the message
+  client.publish("getTemperatureAndHumidity/", message.c_str()); 
 
   Serial.println("Humidity = ");
   Serial.print(humidity);
