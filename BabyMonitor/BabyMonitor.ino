@@ -167,10 +167,17 @@ void measureSound() {
 
 }
 
+
 void printValues() {
   Serial.println("Temperature = ");
   Serial.print(bme.readTemperature());
   Serial.println(" *C");
+
+  float temperature = bme.readTemperature();
+  String message = "{\"sensor_id\": \"Pending\", \"device_id\": \"Pending\", \"sound_level\": \"Pending\", \"temperature\": " + String(temperature) + ", \"date\": \"Pending\"}";
+  client.publish("getTemperatureAndHumidity/", message.c_str()); // Publish the message
+
+  
 
   Serial.println("Humitidy = ");
   Serial.print(bme.readHumidity());
