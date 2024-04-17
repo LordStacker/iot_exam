@@ -3,121 +3,103 @@
 #include <Adafruit_BME280.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <time.h>
 
-
-//setup network and mqtt
-const char* ssid = "AtanasiPhone";
-const char* password =  "otednodoosem";
+// Setup network and MQTT
+const char* ssid = "IphoneNico";
+const char* password =  "nico1234";
 const char* mqttServer = "mqtt.flespi.io";
 const int mqttPort = 1883;
-const char* mqttUser = "716DngMN9TFtlwwDS1gKQZKaDtGz9reFSP8gms9uJ9FYRh0uzulEcVdUKIwQbG2R";
+const char* mqttUser = "CtheHXh2THq0Pf3JhObAMNlLn5bkx4klSAGiWdJY0R53tzL5vM6yZh2euJDgC01e";
 const char* mqttPassword = "*";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-
-//setup sound sensor.
+// Setup sound sensor
 const int sensorMinValue = 0;
 const int sensorMaxValue = 1680;
 const int dbMinValue = 30;
 const int dbMaxValue = 130;
 
-/*
-int lastState = HIGH;
-int currentState;
-*/
+float temperature;
+float humidity;
+int db;
 
-//Setup bme280 sensor.
-//Usign I2C connection
 Adafruit_BME280 bme;
 
 unsigned long delayTime;
 
-
-
 void setup() {
-  // put your setup code here, to run once:
-
   Serial.begin(9600);
-  
+
   setupWiFiConnection();
   setupSoundSensor();
 
- 
   Serial.println(F("BME280 test"));
   bool status;
 
-  //default settings
+  // Default settings
   status = bme.begin(0x76);
-  if(!status) {
+  if (!status) {
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while(1);
+    while (1);
   }
 
   Serial.println("-- Default Test --");
   delayTime = 1000;
 
+  configTime(0, 0, "pool.ntp.org"); // Configure the NTP client
+
   Serial.println();
-  
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
   client.loop();
   printValues();
   measureSound();
   delay(delayTime);
-
 }
 
-void setupWiFiConnection()
-{
+void setupWiFiConnection() {
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.println("Connected to the WiFi network");
   }
 
   Serial.println("Connected to the WiFi network");
- 
+
   client.setServer(mqttServer, mqttPort);
 
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
- 
-    if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
- 
+
+    if (client.connect("ESP32Client", mqttUser, mqttPassword)) {
       Serial.println("connected");
- 
     } else {
- 
       Serial.print("failed with state ");
       Serial.print(client.state());
       delay(2000);
- 
     }
   }
-  
+
   client.publish("getTemperatureAndHumidity/", "Hello World!");
 }
 
-void setupSoundSensor(){
+void setupSoundSensor() {
   pinMode(A0, INPUT);
   pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);                                           
+  pinMode(4, OUTPUT);
   pinMode(5, OUTPUT);
-                    
+
   digitalWrite(3, LOW);
   digitalWrite(4, LOW);
   digitalWrite(5, LOW);
 }
 
 void measureSound() {
-
   unsigned int sample;
   unsigned long startMillis = millis();
   unsigned int signalMax = 0;
@@ -139,7 +121,7 @@ void measureSound() {
   float peakToPeak = signalMax - signalMin;
 
   // Map peak-to-peak amplitude to dB using calibration data
-  int db = map(peakToPeak, sensorMinValue, sensorMaxValue, dbMinValue, dbMaxValue);
+  db = map(peakToPeak, sensorMinValue, sensorMaxValue, dbMinValue, dbMaxValue);
 
   Serial.print("Loudness: ");
   Serial.print(db);
@@ -164,23 +146,29 @@ void measureSound() {
   }
 
   delay(200);
-
 }
 
-
 void printValues() {
+  temperature = bme.readTemperature();
+  humidity = bme.readHumidity();
+
   Serial.println("Temperature = ");
-  Serial.print(bme.readTemperature());
+  Serial.print(temperature);
   Serial.println(" *C");
 
-  float temperature = bme.readTemperature();
-  String message = "{\"sensor_id\": \"Pending\", \"device_id\": \"Pending\", \"sound_level\": \"Pending\", \"temperature\": " + String(temperature) + ", \"date\": \"Pending\"}";
+  // Get current time
+  time_t now = time(nullptr);
+  struct tm* timeinfo;
+  timeinfo = localtime(&now);
+  
+  // Format: DD/MM/YYYY and HOUR:MINUTE
+  char formattedDateTime[20];
+  snprintf(formattedDateTime, 20, "%d/%d/%d and %d:%s%d", timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900, timeinfo->tm_hour, (timeinfo->tm_min < 10 ? "0" : ""), timeinfo->tm_min);
+  String message = "{\"sensor_id\": \"Pending\", \"device_id\": \"Pending\", \"sound_level\": " + String(db) + ", \"temperature\": " + String(temperature) + ", \"humidity\": " + String(humidity) + ", \"date\": \"" + String(formattedDateTime) + "\"}";
   client.publish("getTemperatureAndHumidity/", message.c_str()); // Publish the message
 
-  
-
-  Serial.println("Humitidy = ");
-  Serial.print(bme.readHumidity());
+  Serial.println("Humidity = ");
+  Serial.print(humidity);
   Serial.println(" %");
 
   Serial.println();
