@@ -3,7 +3,6 @@
 #include <Adafruit_BME280.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <time.h>
 #include "Secrets.h" 
 
 
@@ -52,7 +51,6 @@ void setup() {
   Serial.println("-- Default Test --");
   delayTime = 1000;
 
-  configTime(0, 0, "pool.ntp.org"); 
 
   Serial.println();
 }
@@ -159,15 +157,12 @@ void printValues() {
   Serial.print(temperature);
   Serial.println(" *C");
 
-  // Get current time
-  time_t now = time(nullptr);
-  struct tm* timeinfo;
-  timeinfo = localtime(&now);
   
- 
-  char formattedDateTime[20];
-  snprintf(formattedDateTime, 20, "%d/%d/%d and %d:%s%d", timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900, timeinfo->tm_hour, (timeinfo->tm_min < 10 ? "0" : ""), timeinfo->tm_min);
-  String message = "{\"sensor_id\": \"Pending\", \"device_id\": \"Pending\", \"sound_level\": " + String(db) + ", \"temperature\": " + String(temperature) + ", \"humidity\": " + String(humidity) + ", \"date\": \"" + String(formattedDateTime) + "\"}";
+
+  String message = "{\"sensor_id\": \"Pending\", \"device_id\": \"Pending\", \"sound_level\": " + String(db) +
+   ", \"temperature\": " + String(temperature) + ", \"humidity\": " + 
+   String(humidity) + "}";
+
   client.publish("getTemperatureAndHumidity/", message.c_str()); 
 
   Serial.println("Humidity = ");
